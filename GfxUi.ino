@@ -13,7 +13,7 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI);
 Arduino_GFX *gfx = new Arduino_ST7735(bus, TFT_RST, 1 /* rotation */, false /* IPS */, 128 /* width */, 160 /* height */, 0 /* col offset */, 0 /* row offset */, 0, 0, false);
 
-GfxUi gfxui(gfx, 11, 11);
+GfxUi gfxui(gfx);
 
 int count = 0;
 
@@ -21,13 +21,10 @@ void setup() {
   Serial.begin(115200);
 
   gfx->begin();
-  gfx->setFont(&ConcertOne_Regular9pt7b);
+  gfx->setFont(&ConcertOne_Regular9pt7b); 
   gfx->setTextWrap(false);
 
   gfx->fillScreen(BLACK);
-
-  Serial.println(String(gfxui.strWidth("abcde")));
-  Serial.println(String(gfxui.strHeight("abcde")));
 }
 
 void loop() {
@@ -104,23 +101,31 @@ void loop() {
   // gfx->draw16bitRGBBitmapWithMask(10, 10, bitmap, bitmapMask, 32, 32);
 
   // Draw text
-  gfx->setTextColor(0xFFFF);
-  gfx->setTextSize(0.5);
-  gfx->setCursor(30, 0);
-  gfx->println("0.5 " + String(count));
+  // gfx->setTextColor(0xFFFF);
+  // gfx->setTextSize(0.5);
+  // gfx->setCursor(30, 0);
+  // gfx->println("0.5 " + String(count));
 
-  gfx->setTextColor(0xFFFF);
-  gfx->setTextSize(1);
-  gfx->setCursor(30, 30);
-  gfx->println("1 " + String(count));
+  // gfx->setTextColor(0xFFFF);
+  // gfx->setTextSize(1);
+  // gfx->setCursor(30, 30);
+  // gfx->println("1 " + String(count));
 
-  gfx->setTextColor(0xFFFF);
-  gfx->setTextSize(2);
-  gfx->setCursor(30, 80);
-  gfx->println("2 " + String(count));
+  // gfx->setTextColor(0xFFFF);
+  // gfx->setTextSize(2);
+  // gfx->setCursor(30, 80);
+  // gfx->println("2 " + String(count));
 
+  const char *text = "BRUH";
 
-  gfxui.drawCanva(20, 20, 100, 30, 10, WHITE);
+  uint16_t textWidth = gfxui.getStringWidth(text);
+  uint16_t textHeight = gfxui.getStringHeight(text);
+
+  int x = gfxui.centerOf(gfx->width(), textWidth, 1);
+  int y = gfxui.centerOf(gfx->height(), textHeight, 1);
+  gfxui.drawStringScope(x, y, text);
+
+  // gfxui.drawCanva(20, 20, 100, 30, 10, WHITE);
 
   count++;
   delay(500);
