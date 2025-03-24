@@ -21,7 +21,7 @@ void setup() {
   Serial.begin(115200);
 
   gfx->begin();
-  gfx->setFont(&ConcertOne_Regular9pt7b); 
+  gfx->setFont(&ConcertOne_Regular9pt7b);
   gfx->setTextWrap(false);
 
   gfx->fillScreen(BLACK);
@@ -116,16 +116,18 @@ void loop() {
   // gfx->setCursor(30, 80);
   // gfx->println("2 " + String(count));
 
-  const char *text = "BRUH";
+  const char *text = "Hello, World!";
 
   uint16_t textWidth = gfxui.getStringWidth(text);
   uint16_t textHeight = gfxui.getStringHeight(text);
 
-  int x = gfxui.centerOf(gfx->width(), textWidth, 1);
-  int y = gfxui.centerOf(gfx->height(), textHeight, 1);
-  gfxui.drawStringScope(x, y, text);
+  Serial.print(gfx->width());
+  Serial.println(gfx->height());
 
-  // gfxui.drawCanva(20, 20, 100, 30, 10, WHITE);
+  int x = gfxui.centerOf(gfx->width(), textWidth);
+  int y = gfxui.centerOf(gfx->height(), textHeight);
+
+  gfxui.drawTextCanva(0, 0, 3, "Hello, World!", WHITE, WHITE);
 
   count++;
   delay(500);

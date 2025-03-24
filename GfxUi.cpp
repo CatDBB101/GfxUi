@@ -21,17 +21,17 @@ uint16_t GfxUi::getStringWidth(const char* s) {
   int16_t x1, y1;
   uint16_t w, h;
   gfx->getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
-  return w;
+  return w - 1;
 }
 
 uint16_t GfxUi::getStringHeight(const char* s) {
   int16_t x1, y1;
   uint16_t w, h;
   gfx->getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
-  return h;
+  return h - 1;
 }
 
-int GfxUi::centerOf(int container, int content, int offset) {
+int GfxUi::centerOf(int container, int content) {
   return (container / 2) - (content / 2);
 }
 
@@ -48,4 +48,22 @@ void GfxUi::drawStringScope(int x, int y, const char* s) {
 
   gfx->drawLine(x, y, x + w, y, RED);
   gfx->drawLine(x, y, x, y - h, RED);
+}
+
+void GfxUi::drawTextCanva(int16_t x, int16_t y, int16_t r, const char* s, uint16_t tc, uint16_t bc) {
+  int sw = getStringWidth(s);
+  int sh = getStringHeight(s);
+
+  int w = sw + (5 * 2);
+  int h = sh + (5 * 2);
+
+  gfx->drawRoundRect(x, y, w, h, r, bc);
+
+  int tx = x + centerOf(w, sw);
+  int ty = y + centerOf(h, sh) + sh;
+
+  gfx->setTextSize(1);
+  gfx->setTextColor(tc);
+  gfx->setCursor(tx, ty);
+  gfx->println(s);
 }
