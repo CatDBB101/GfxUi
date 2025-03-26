@@ -1,5 +1,5 @@
 #include <Arduino_GFX_Library.h>
-#include <GfxUi.h>
+#include "GfxUi.h"
 #include <ConcertOne_Regular9pt7b.h>
 
 // Define pins for ST7735
@@ -96,7 +96,7 @@ void loop() {
 
   gfxui.drawScrollBar(gfx->width() - 12, CENTER, 10, gfx->height() - 2, stepLimit, count, 3, WHITE);
 
-  gfxui.drawBitmapX2(CENTER, CENTER, bitmap, 32, 32, TRANS);
+  gfxui.drawBitmap(CENTER, CENTER, bitmap, 32, 32, TRANS);
 
   count++;
   if (count > stepLimit - 1) {
