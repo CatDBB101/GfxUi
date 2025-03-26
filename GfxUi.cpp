@@ -5,12 +5,7 @@ GfxUi::GfxUi(Arduino_GFX* _gfx) {
   gfx = _gfx;
 }
 
-void GfxUi::drawCanva(
-  int16_t x, int16_t y,
-  int16_t w, int16_t h,
-  int16_t r, uint16_t c) {
-  gfx->drawRoundRect(x, y, w, h, r, c);
-}
+//* calculation function *//
 
 void GfxUi::getStringSize(const char* s, uint16_t* w, uint16_t* h) {
   int16_t x1, y1;
@@ -35,9 +30,39 @@ int GfxUi::centerOf(int container, int content) {
   return (container / 2) - (content / 2);
 }
 
+int GfxUi::checkCenterWidth(int offset, int w) {
+  if (offset == CENTER) {
+    return this->centerOf(gfx->width(), w);
+  } else {
+    return offset;
+  }
+}
+
+int GfxUi::checkCenterHeight(int offset, int w) {
+  if (offset == CENTER) {
+    return this->centerOf(gfx->height(), w);
+  } else {
+    return offset;
+  }
+}
+
+//* draw function  *//
+
+void GfxUi::drawCanva(
+  int16_t x, int16_t y,
+  int16_t w, int16_t h,
+  int16_t r, uint16_t c) {
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+  gfx->drawRoundRect(x, y, w, h, r, c);
+}
+
 void GfxUi::drawStringScope(int x, int y, const char* s) {
   int w = getStringWidth(s);
   int h = getStringHeight(s);
+
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
 
   gfx->fillRect(x, y - h, w, h, GREEN);
 
@@ -57,6 +82,9 @@ void GfxUi::drawTextCanva(int16_t x, int16_t y, int16_t r, const char* s, uint16
   int w = sw + (5 * 2);
   int h = sh + (5 * 2);
 
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+
   gfx->drawRoundRect(x, y, w, h, r, bc);
 
   int tx = x + centerOf(w, sw);
@@ -64,6 +92,32 @@ void GfxUi::drawTextCanva(int16_t x, int16_t y, int16_t r, const char* s, uint16
 
   gfx->setTextSize(1);
   gfx->setTextColor(tc);
-  gfx->setCursor(tx, ty);
+  gfx->setCursor(tx - 1, ty - 1);
   gfx->println(s);
+}
+
+void GfxUi::drawProgressBar(int16_t x, int16_t y, int16_t w, int16_t h, float value, int16_t r, uint16_t c) {
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+
+  gfx->drawRoundRect(x, y, w, h, r, c);
+
+  int w2 = (value / 100) * (w - (2 * 2));
+  int h2 = h - (2 * 2);
+
+  gfx->fillRect(x + 2, y + 2, w2, h2, c);
+}
+
+void GfxUi::drawScrollBar(int16_t x, int16_t y, int16_t w, int16_t h, int stepNumber, int step, int16_t r, uint16_t c) {
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+
+  gfx->drawRoundRect(x, y, w, h, r, c);
+
+  int w2 = w - (2 * 2);
+  int h2 = (h - (2 * 2)) / stepNumber;
+  int x2 = x + 2;
+  int y2 = (y + 2) + (h2 * step);
+
+  gfx->fillRect(x2, y2, w2, h2, c);
 }

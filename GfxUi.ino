@@ -15,7 +15,7 @@ Arduino_GFX *gfx = new Arduino_ST7735(bus, TFT_RST, 1 /* rotation */, false /* I
 
 GfxUi gfxui(gfx);
 
-int count = 0;
+float count = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -116,19 +116,24 @@ void loop() {
   // gfx->setCursor(30, 80);
   // gfx->println("2 " + String(count));
 
-  const char *text = "Hello, World!";
+  // const char *text = "Hello, World!";
 
-  uint16_t textWidth = gfxui.getStringWidth(text);
-  uint16_t textHeight = gfxui.getStringHeight(text);
+  // uint16_t textWidth = gfxui.getStringWidth(text);
+  // uint16_t textHeight = gfxui.getStringHeight(text);
 
-  Serial.print(gfx->width());
-  Serial.println(gfx->height());
+  // gfxui.drawTextCanva(CENTER, CENTER, 3, "Hello, World!", WHITE, WHITE);
 
-  int x = gfxui.centerOf(gfx->width(), textWidth);
-  int y = gfxui.centerOf(gfx->height(), textHeight);
+  // gfxui.drawProgressBar(0, 0, 100, 20, count, 3, WHITE);
 
-  gfxui.drawTextCanva(0, 0, 3, "Hello, World!", WHITE, WHITE);
+  Serial.println(count);
+
+  int stepLimit = 10;
+
+  gfxui.drawScrollBar(gfx->width() - 12, CENTER, 10, gfx->height() - 2, stepLimit, count, 3, WHITE);
 
   count++;
+  if (count > stepLimit - 1) {
+    count = 0;
+  }
   delay(500);
 }
