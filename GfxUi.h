@@ -1,6 +1,8 @@
 #include "Arduino_GFX.h"
 
 #define CENTER 200
+#define TRANS 0x680c
+#define TRANSPARENT 0x680c
 
 class GfxUi {
 public:
@@ -20,6 +22,8 @@ public:
   void drawTextCanva(int16_t x, int16_t y, int16_t r, const char* s, uint16_t tc, uint16_t bc);
   void drawProgressBar(int16_t x, int16_t y, int16_t w, int16_t h, float value, int16_t r, uint16_t c);
   void drawScrollBar(int16_t x, int16_t y, int16_t w, int16_t h, int stepNumber, int step, int16_t r, uint16_t c);
+  void drawBitmap(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c);
+  void drawBitmapX2(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c);
 private:
   Arduino_GFX* gfx;
 };

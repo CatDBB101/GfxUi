@@ -121,3 +121,42 @@ void GfxUi::drawScrollBar(int16_t x, int16_t y, int16_t w, int16_t h, int stepNu
 
   gfx->fillRect(x2, y2, w2, h2, c);
 }
+
+void GfxUi::drawBitmap(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c) {
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+
+  int16_t i, j;
+  uint16_t pixel;
+
+  for (j = 0; j < h; j++) {
+    for (i = 0; i < w; i++) {
+      pixel = bitmap[i + j * w];
+      if (pixel != c) {
+        gfx->drawPixel(x + i, y + j, pixel);
+      }
+    }
+  }
+}
+
+void GfxUi::drawBitmapX2(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c) {
+  x = this->checkCenterWidth(x, w * 2);
+  y = this->checkCenterHeight(y, h * 2);
+
+  uint16_t pixel;
+
+  for (int16_t j = 0; j < h; j++) {
+    for (int16_t i = 0; i < w; i++) {
+      pixel = bitmap[i + j * w];
+      if (pixel != c) {
+        // Draw each pixel as 2x2 block
+        int16_t dx = x + (i * 2);
+        int16_t dy = y + (j * 2);
+        gfx->drawPixel(dx, dy, pixel);
+        gfx->drawPixel(dx + 1, dy, pixel);
+        gfx->drawPixel(dx, dy + 1, pixel);
+        gfx->drawPixel(dx + 1, dy + 1, pixel);
+      }
+    }
+  }
+}
