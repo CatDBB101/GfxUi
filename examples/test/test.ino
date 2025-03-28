@@ -86,7 +86,8 @@ void loop() {
   // uint16_t textWidth = gfxui.getStringWidth(text);
   // uint16_t textHeight = gfxui.getStringHeight(text);
 
-  // gfxui.drawTextCanva(CENTER, CENTER, 3, "Hello, World!", WHITE, WHITE);
+  gfxui.drawTextCanva(CENTER, CENTER, FIT_TEXT, FIT_TEXT, 3, "Hello, World!", WHITE, WHITE);
+  gfxui.drawTextCanva(0, 0, 200, 10, 3, "Hello, World!", WHITE, WHITE);
 
   // gfxui.drawProgressBar(0, 0, 100, 20, count, 3, WHITE);
 

@@ -46,6 +46,22 @@ int GfxUi::checkCenterHeight(int offset, int w) {
   }
 }
 
+int GfxUi::checkFitTextWidth(int offset, int str_w) {
+  if (offset == FIT_TEXT) {
+    return str_w + (5 * 2);
+  } else {
+    return offset;
+  }
+}
+
+int GfxUi::checkFitTextHeight(int offset, int str_h) {
+  if (offset == FIT_TEXT) {
+    return str_h + (5 * 2);
+  } else {
+    return offset;
+  }
+}
+
 //* draw function  *//
 
 void GfxUi::drawCanva(
@@ -75,12 +91,12 @@ void GfxUi::drawStringScope(int x, int y, const char* s) {
   gfx->drawLine(x, y, x, y - h, RED);
 }
 
-void GfxUi::drawTextCanva(int16_t x, int16_t y, int16_t r, const char* s, uint16_t tc, uint16_t bc) {
+void GfxUi::drawTextCanva(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, const char* s, uint16_t tc, uint16_t bc) {
   int sw = getStringWidth(s);
   int sh = getStringHeight(s);
 
-  int w = sw + (5 * 2);
-  int h = sh + (5 * 2);
+  w = this->checkFitTextWidth(w, sw);
+  h = this->checkFitTextHeight(h, sh);
 
   x = this->checkCenterWidth(x, w);
   y = this->checkCenterHeight(y, h);
