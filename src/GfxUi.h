@@ -18,6 +18,8 @@ public:
   int checkCenterHeight(int offset, int w);
   int checkFitTextWidth(int offset, int str_w);
   int checkFitTextHeight(int offset, int str_h);
+  int calculateTextCanvaWidth(int fit_text_offset, const char* s);
+  int calculateTextCanvaHeight(int fit_text_offset, const char* s);
 
   //* draw funciton *//
   void drawStringScope(int x, int y, const char* s);

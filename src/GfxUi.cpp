@@ -62,6 +62,13 @@ int GfxUi::checkFitTextHeight(int offset, int str_h) {
   }
 }
 
+int calculateTextCanvaWidth(int fit_text_offset, const char* s) {
+  return this->checkFitTextWidth(fit_text_offset, this->getStringWidth(s));
+}
+int calculateTextCanvaHeight(int fit_text_offset, const char* s) {
+  return this->checkFitTextHeight(fit_text_offset, this->getStringHeight(s));
+}
+
 //* draw function  *//
 
 void GfxUi::drawCanva(
