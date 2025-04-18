@@ -60,7 +60,7 @@ int GfxUi::checkFitTextHeight(int offset, int str_h) {
   } else {
     return offset;
   }
-} 
+}
 
 int GfxUi::calculateTextCanvaWidth(int fit_text_offset, const char* s) {
   return this->checkFitTextWidth(fit_text_offset, this->getStringWidth(s));
@@ -182,5 +182,97 @@ void GfxUi::drawBitmapX2(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w
         gfx->drawPixel(dx + 1, dy + 1, pixel);
       }
     }
+  }
+}
+
+void GfxUi::setAnimation(const uint16_t* _anim, uint8_t _frameNumber, int _pixelNumber) {
+  this->anim = _anim;
+  this->frameNumber = _frameNumber;
+  this->pixelNumber = _pixelNumber;
+  this->frame = 0;
+  this->lastTimer = 0;
+}
+
+void GfxUi::setAnimationDuration(int _duration) {
+  this->duration = _duration;
+}
+
+void GfxUi::playSyncAnimation(int x, int y, int w, int h, bool scaleX2) {
+  x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
+  y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
+
+  for (uint8_t f = 0; f < this->frameNumber; f++) {
+    gfx->fillScreen(gfx->color565(0, 0, 0));
+    int i = 0;
+    int j = 0;
+    for (int e = 0; e < this->pixelNumber; e++) {
+      uint16_t pixel = pgm_read_word_near(this->anim + f * this->pixelNumber + e);
+
+      if (pixel != TRANS) {
+        int dx = x + (i * (scaleX2 ? 2 : 1));
+        int dy = y + (j * (scaleX2 ? 2 : 1));
+        if (scaleX2) {
+          gfx->drawPixel(dx, dy, pixel);
+          gfx->drawPixel(dx + 1, dy, pixel);
+          gfx->drawPixel(dx, dy + 1, pixel);
+          gfx->drawPixel(dx + 1, dy + 1, pixel);
+        } else {
+          gfx->drawPixel(dx, dy, pixel);
+        }
+      }
+
+      i++;
+      if (i >= w) {
+        i = 0;
+        j++;
+      }
+    }
+    delay(this->duration);
+  }
+}
+
+void GfxUi::playAsyncAnimation(int x, int y, int w, int h, bool scaleX2) {
+  x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
+  y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
+
+  Serial.println(this->frame);
+
+  int i = 0;
+  int j = 0;
+  for (int e = 0; e < this->pixelNumber; e++) {
+    uint16_t pixel = pgm_read_word_near(this->anim + this->frame * this->pixelNumber + e);
+
+    if (pixel != TRANS) {
+      int dx = x + (i * (scaleX2 ? 2 : 1));
+      int dy = y + (j * (scaleX2 ? 2 : 1));
+      if (scaleX2) {
+        gfx->drawPixel(dx, dy, pixel);
+        gfx->drawPixel(dx + 1, dy, pixel);
+        gfx->drawPixel(dx, dy + 1, pixel);
+        gfx->drawPixel(dx + 1, dy + 1, pixel);
+      } else {
+        gfx->drawPixel(dx, dy, pixel);
+      }
+    }
+
+    i++;
+    if (i >= w) {
+      i = 0;
+      j++;
+    }
+  }
+
+  unsigned long past_time = millis() - this->lastTimer;
+
+  Serial.println(past_time);
+  Serial.println(past_time >= this->duration);
+
+  if (past_time >= this->duration && !this->stopAnimation) {
+    this->frame++;
+    if (this->frame >= this->frameNumber) {
+      this->frame = 0;
+    }
+
+    this->lastTimer = millis();
   }
 }
