@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <GfxUi.h>
+#include "GfxUi.h"
 
 GfxUi::GfxUi(Arduino_GFX* _gfx) {
   gfx = _gfx;
