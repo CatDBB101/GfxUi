@@ -27,14 +27,15 @@ public:
   void drawTextCanva(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, const char* s, uint16_t tc, uint16_t bc);
   void drawProgressBar(int16_t x, int16_t y, int16_t w, int16_t h, float value, int16_t r, uint16_t c);
   void drawScrollBar(int16_t x, int16_t y, int16_t w, int16_t h, int stepNumber, int step, int16_t r, uint16_t c);
-  void drawBitmap(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c);
-  void drawBitmapX2(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c);
-  void setAnimation(const uint16_t* _anim, uint8_t _frameNumber, int _pixelNumber);
+  String b64BinString(const char* input);
+  void drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h);
+  void drawBitmapX2(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h);
+  void setAnimation(const char* _anim[], uint8_t _frameNumber);
   void setAnimationDuration(int _duration);
   void playSyncAnimation(int x, int y, int w, int h, bool scaleX2);
   void playAsyncAnimation(int x, int y, int w, int h, bool scaleX2);
 
-  const uint16_t* anim;
+  const char* anim[10];
   uint8_t frameNumber;
   int pixelNumber;
   int duration;

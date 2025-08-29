@@ -146,49 +146,122 @@ void GfxUi::drawScrollBar(int16_t x, int16_t y, int16_t w, int16_t h, int stepNu
   gfx->fillRect(x2, y2, w2, h2, c);
 }
 
-void GfxUi::drawBitmap(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c) {
+String GfxUi::b64BinString(const char* input) {
+  String binaryResult = "";
+
+  for (int i = 0; input[i] != '\0'; i++) {
+    char c = input[i];
+
+    // Skip newline characters
+    if (c == '\n') {
+      continue;
+    }
+
+    int value;
+
+    // Convert base64 character to 6-bit value
+    if (c >= 'A' && c <= 'Z') {
+      value = c - 'A';  // A-Z: 0-25
+    } else if (c >= 'a' && c <= 'z') {
+      value = c - 'a' + 26;  // a-z: 26-51
+    } else if (c >= '0' && c <= '9') {
+      value = c - '0' + 52;  // 0-9: 52-61
+    } else if (c == '+') {
+      value = 62;
+    } else if (c == '/') {
+      value = 63;
+    } else {
+      // Skip invalid characters
+      continue;
+    }
+
+    // Convert 6-bit value to binary string with leading zeros
+    for (int bit = 5; bit >= 0; bit--) {
+      if (value & (1 << bit)) {
+        binaryResult += '1';
+      } else {
+        binaryResult += '0';
+      }
+    }
+  }
+
+  return binaryResult;
+}
+
+void GfxUi::drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h) {
   x = this->checkCenterWidth(x, w);
   y = this->checkCenterHeight(y, h);
 
-  int16_t i, j;
-  uint16_t pixel;
+  String binString = b64BinString(bitmap.c_str());
 
-  for (j = 0; j < h; j++) {
-    for (i = 0; i < w; i++) {
-      pixel = bitmap[i + j * w];
-      if (pixel != c) {
-        gfx->drawPixel(x + i, y + j, pixel);
-      }
+  // Serial.println(x);
+  // Serial.println(y);
+  // Serial.println(w);
+  // Serial.println(h);
+  // Serial.println(binString);
+
+  int ix, iy;
+  ix = 0;
+  iy = 0;
+
+  for (int i = 0; i < (w * h); i++) {
+    // Serial.println(String(i) + " " + binString[i] + " " + (binString[i] == '1'));
+
+    if (binString[i] == '1') {
+      gfx->drawPixel(x + ix, y + iy, WHITE);
+    }
+
+    ix++;
+    if (ix >= w) {
+      ix = 0;
+      iy++;
     }
   }
 }
 
-void GfxUi::drawBitmapX2(int16_t x, int16_t y, const uint16_t* bitmap, int16_t w, int16_t h, uint16_t c) {
+void GfxUi::drawBitmapX2(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h) {
   x = this->checkCenterWidth(x, w * 2);
   y = this->checkCenterHeight(y, h * 2);
 
-  uint16_t pixel;
+  String binString = b64BinString(bitmap.c_str());
 
-  for (int16_t j = 0; j < h; j++) {
-    for (int16_t i = 0; i < w; i++) {
-      pixel = bitmap[i + j * w];
-      if (pixel != c) {
-        // Draw each pixel as 2x2 block
-        int16_t dx = x + (i * 2);
-        int16_t dy = y + (j * 2);
-        gfx->drawPixel(dx, dy, pixel);
-        gfx->drawPixel(dx + 1, dy, pixel);
-        gfx->drawPixel(dx, dy + 1, pixel);
-        gfx->drawPixel(dx + 1, dy + 1, pixel);
-      }
+  // Serial.println(x);
+  // Serial.println(y);
+  // Serial.println(w);
+  // Serial.println(h);
+  // Serial.println(binString);
+
+  int ix, iy;
+  ix = 0;
+  iy = 0;
+
+  for (int i = 0; i < (w * h); i++) {
+    // Serial.println(String(i) + " " + binString[i] + " " + (binString[i] == '1'));
+
+    int16_t dx = x + (ix * 2);
+    int16_t dy = y + (iy * 2);
+
+    if (binString[i] == '1') {
+      gfx->drawPixel(dx, dy, WHITE);
+      gfx->drawPixel(dx + 1, dy, WHITE);
+      gfx->drawPixel(dx, dy + 1, WHITE);
+      gfx->drawPixel(dx + 1, dy + 1, WHITE);
+    }
+
+    ix++;
+    if (ix >= w) {
+      ix = 0;
+      iy++;
     }
   }
 }
 
-void GfxUi::setAnimation(const uint16_t* _anim, uint8_t _frameNumber, int _pixelNumber) {
-  this->anim = _anim;
+void GfxUi::setAnimation(const char* _anim[], uint8_t _frameNumber) {
+  for (int i = 0; i < _frameNumber; i++) {
+    this->anim[i] = _anim[i];
+  }
   this->frameNumber = _frameNumber;
-  this->pixelNumber = _pixelNumber;
+
   this->frame = 0;
   this->lastTimer = 0;
 }
@@ -201,31 +274,15 @@ void GfxUi::playSyncAnimation(int x, int y, int w, int h, bool scaleX2) {
   x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
   y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
 
-  for (uint8_t f = 0; f < this->frameNumber; f++) {
+  for (int i = 0; i < this->frameNumber; i++) {
     gfx->fillScreen(gfx->color565(0, 0, 0));
-    int i = 0;
-    int j = 0;
-    for (int e = 0; e < this->pixelNumber; e++) {
-      uint16_t pixel = pgm_read_word_near(this->anim + f * this->pixelNumber + e);
+    // Serial.println(String(this->anim[i]));
+    // Serial.println("=====================");
 
-      if (pixel != TRANS) {
-        int dx = x + (i * (scaleX2 ? 2 : 1));
-        int dy = y + (j * (scaleX2 ? 2 : 1));
-        if (scaleX2) {
-          gfx->drawPixel(dx, dy, pixel);
-          gfx->drawPixel(dx + 1, dy, pixel);
-          gfx->drawPixel(dx, dy + 1, pixel);
-          gfx->drawPixel(dx + 1, dy + 1, pixel);
-        } else {
-          gfx->drawPixel(dx, dy, pixel);
-        }
-      }
-
-      i++;
-      if (i >= w) {
-        i = 0;
-        j++;
-      }
+    if (!scaleX2) {
+      this->drawBitmap(x, y, String(this->anim[i]), w, h);
+    } else {
+      this->drawBitmapX2(x, y, String(this->anim[i]), w, h);
     }
     delay(this->duration);
   }
@@ -235,31 +292,15 @@ void GfxUi::playAsyncAnimation(int x, int y, int w, int h, bool scaleX2) {
   x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
   y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
 
+  Serial.println(x);
+  Serial.println(y);
+
   Serial.println(this->frame);
 
-  int i = 0;
-  int j = 0;
-  for (int e = 0; e < this->pixelNumber; e++) {
-    uint16_t pixel = pgm_read_word_near(this->anim + this->frame * this->pixelNumber + e);
-
-    if (pixel != TRANS) {
-      int dx = x + (i * (scaleX2 ? 2 : 1));
-      int dy = y + (j * (scaleX2 ? 2 : 1));
-      if (scaleX2) {
-        gfx->drawPixel(dx, dy, pixel);
-        gfx->drawPixel(dx + 1, dy, pixel);
-        gfx->drawPixel(dx, dy + 1, pixel);
-        gfx->drawPixel(dx + 1, dy + 1, pixel);
-      } else {
-        gfx->drawPixel(dx, dy, pixel);
-      }
-    }
-
-    i++;
-    if (i >= w) {
-      i = 0;
-      j++;
-    }
+  if (!scaleX2) {
+    this->drawBitmap(x, y, this->anim[this->frame], w, h);
+  } else {
+    this->drawBitmapX2(x, y, this->anim[this->frame], w, h);
   }
 
   unsigned long past_time = millis() - this->lastTimer;
