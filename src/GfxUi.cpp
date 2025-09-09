@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "GfxUi.h"
+#include <GfxUi.h>
 
 GfxUi::GfxUi(Arduino_GFX* _gfx) {
   gfx = _gfx;
@@ -188,7 +188,32 @@ String GfxUi::b64BinString(const char* input) {
   return binaryResult;
 }
 
-void GfxUi::drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h) {
+//* set up animation *//
+
+void GfxUi::setAnimation(const char* _anim[], uint8_t _frameNumber) {
+  for (int i = 0; i < _frameNumber; i++) {
+    String bin = this->b64BinString(_anim[i]);
+    this->anim[i] = strdup(bin.c_str());
+  }
+  // if (isColor) {
+  //   this->initAnimColor(_anim, _frameNumber);
+  // } else {
+  //   this->initAnim(_anim, _frameNumber);
+  // }
+  this->stopAnimation = false;
+  this->frameNumber = _frameNumber;
+
+  this->frame = 0;
+  this->lastTimer = 0;
+}
+
+void GfxUi::setAnimationDuration(int _duration) {
+  this->duration = _duration;
+}
+
+//* black and white *//
+
+void GfxUi::drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h, bool scaleX2) {
   x = this->checkCenterWidth(x, w);
   y = this->checkCenterHeight(y, h);
 
@@ -208,7 +233,14 @@ void GfxUi::drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int
     // Serial.println(String(i) + " " + binString[i] + " " + (binString[i] == '1'));
 
     if (binString[i] == '1') {
-      gfx->drawPixel(x + ix, y + iy, WHITE);
+      if (scaleX2) {
+        int16_t dx = x + (ix * 2);
+        int16_t dy = y + (iy * 2);
+
+        gfx->fillRect(dx, dy, 2, 2, WHITE);
+      } else {
+        gfx->drawPixel(x + ix, y + iy, WHITE);
+      }
     }
 
     ix++;
@@ -217,103 +249,270 @@ void GfxUi::drawBitmap(int16_t x, int16_t y, const String bitmap, int16_t w, int
       iy++;
     }
   }
-}
-
-void GfxUi::drawBitmapX2(int16_t x, int16_t y, const String bitmap, int16_t w, int16_t h) {
-  x = this->checkCenterWidth(x, w * 2);
-  y = this->checkCenterHeight(y, h * 2);
-
-  String binString = b64BinString(bitmap.c_str());
-
-  // Serial.println(x);
-  // Serial.println(y);
-  // Serial.println(w);
-  // Serial.println(h);
-  // Serial.println(binString);
-
-  int ix, iy;
-  ix = 0;
-  iy = 0;
-
-  for (int i = 0; i < (w * h); i++) {
-    // Serial.println(String(i) + " " + binString[i] + " " + (binString[i] == '1'));
-
-    int16_t dx = x + (ix * 2);
-    int16_t dy = y + (iy * 2);
-
-    if (binString[i] == '1') {
-      gfx->drawPixel(dx, dy, WHITE);
-      gfx->drawPixel(dx + 1, dy, WHITE);
-      gfx->drawPixel(dx, dy + 1, WHITE);
-      gfx->drawPixel(dx + 1, dy + 1, WHITE);
-    }
-
-    ix++;
-    if (ix >= w) {
-      ix = 0;
-      iy++;
-    }
-  }
-}
-
-void GfxUi::setAnimation(const char* _anim[], uint8_t _frameNumber) {
-  for (int i = 0; i < _frameNumber; i++) {
-    this->anim[i] = _anim[i];
-  }
-  this->frameNumber = _frameNumber;
-
-  this->frame = 0;
-  this->lastTimer = 0;
-}
-
-void GfxUi::setAnimationDuration(int _duration) {
-  this->duration = _duration;
 }
 
 void GfxUi::playSyncAnimation(int x, int y, int w, int h, bool scaleX2) {
   x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
   y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
 
-  for (int i = 0; i < this->frameNumber; i++) {
-    gfx->fillScreen(gfx->color565(0, 0, 0));
-    // Serial.println(String(this->anim[i]));
-    // Serial.println("=====================");
+  for (int f = 0; f < this->frameNumber; f++) {
+    unsigned long frameStart = millis();
+    // gfx->fillScreen(gfx->color565(0, 0, 0));
+    const char* binString = this->anim[f];
 
-    if (!scaleX2) {
-      this->drawBitmap(x, y, String(this->anim[i]), w, h);
-    } else {
-      this->drawBitmapX2(x, y, String(this->anim[i]), w, h);
+    int ix, iy;
+    ix = 0;
+    iy = 0;
+
+    for (int i = 0; i < (w * h); i++) {
+
+      if (binString[i] == '1') {
+        if (scaleX2) {
+          int16_t dx = x + (ix * 2);
+          int16_t dy = y + (iy * 2);
+
+          gfx->fillRect(dx, dy, 2, 2, WHITE);
+        } else {
+          gfx->drawPixel(x + ix, y + iy, WHITE);
+        }
+      }
+
+      ix++;
+      if (ix >= w) {
+        ix = 0;
+        iy++;
+      }
     }
-    delay(this->duration);
+
+    unsigned long frameTime = millis() - frameStart;
+    if (frameTime < this->duration) {
+      delay(this->duration - frameTime);
+    }
   }
 }
 
-void GfxUi::playAsyncAnimation(int x, int y, int w, int h, bool scaleX2) {
+void GfxUi::playAsyncAnimation(int x, int y, int w, int h, bool scaleX2, bool clearScreen) {
+  if (this->frame == -1) {
+    // Serial.println("frame == -1");
+    if (clearScreen) {
+      gfx->fillScreen(gfx->color565(0, 0, 0));
+    }
+    this->frame++;
+    return;
+  }
+
   x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
   y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
 
-  Serial.println(x);
-  Serial.println(y);
+  int ix, iy;
+  ix = 0;
+  iy = 0;
 
-  Serial.println(this->frame);
+  // Serial.println("frame :" + String(this->frame));
 
-  if (!scaleX2) {
-    this->drawBitmap(x, y, this->anim[this->frame], w, h);
-  } else {
-    this->drawBitmapX2(x, y, this->anim[this->frame], w, h);
+  for (int i = 0; i < (w * h); i++) {
+
+    if (this->anim[this->frame][i] == '1') {
+      if (scaleX2) {
+        int16_t dx = x + (ix * 2);
+        int16_t dy = y + (iy * 2);
+
+        gfx->fillRect(dx, dy, 2, 2, WHITE);
+      } else {
+        gfx->drawPixel(x + ix, y + iy, WHITE);
+      }
+    }
+
+    ix++;
+    if (ix >= w) {
+      ix = 0;
+      iy++;
+    }
+  }
+  // this->drawBitmap(x, y, this->anim[this->frame], w, h, scaleX2);
+
+  unsigned long past_time = millis() - this->lastTimer;
+
+  // Serial.println("millis() : " + String(millis()));
+  // Serial.println("past_time : " + String(past_time));
+  // Serial.println("lastTimer : " + String(this->lastTimer));
+  // Serial.println("duration : " + String(this->duration));
+  // Serial.println("stop : " + String(this->stopAnimation));
+  // Serial.println(past_time >= this->duration);
+  // Serial.println("===============");
+
+  if (past_time >= this->duration && !this->stopAnimation) {
+
+    this->frame++;
+    if (this->frame >= this->frameNumber) {
+      this->frame = -1;
+    }
+    this->lastTimer = millis();
+  }
+}
+
+//* color *//
+
+void GfxUi::drawBitmapColor(int16_t x, int16_t y, const String bitmap, int16_t paletteIndex, int16_t w, int16_t h, bool scaleX2) {
+  x = this->checkCenterWidth(x, w);
+  y = this->checkCenterHeight(y, h);
+
+  String binString = b64BinString(bitmap.c_str());
+
+  int ix, iy;
+  ix = 0;
+  iy = 0;
+
+  for (int i = 0; i < (w * (h * 2)); i += 2) {
+    uint8_t colorIndex = ((binString[i] == '1') << 1) | (binString[i + 1] == '1');
+
+    uint16_t color =
+      this->COLOR_PALETTE[paletteIndex][colorIndex];
+
+    if (scaleX2) {
+      int16_t dx = x + (ix * 2);
+      int16_t dy = y + (iy * 2);
+
+      gfx->drawPixel(dx, dy, color);
+      gfx->drawPixel(dx + 1, dy, color);
+      gfx->drawPixel(dx, dy + 1, color);
+      gfx->drawPixel(dx + 1, dy + 1, color);
+    } else {
+      gfx->drawPixel(x + ix, y + iy, color);
+    }
+
+
+    ix++;
+    if (ix >= w) {
+      ix = 0;
+      iy++;
+    }
+  }
+}
+
+void GfxUi::playSyncAnimationColor(int x, int y, int w, int h, int16_t paletteIndex, bool scaleX2) {
+  x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
+  y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
+
+  for (int f = 0; f < this->frameNumber; f++) {
+    unsigned long frameStart = millis();
+
+    // gfx->fillScreen(gfx->color565(0, 0, 0));
+
+    int ix, iy;
+    ix = 0;
+    iy = 0;
+
+    const char* binString = this->anim[f];
+
+    for (int i = 0; i < (w * (h * 2)); i += 2) {
+      uint8_t colorIndex = ((binString[i] == '1') << 1) | (binString[i + 1] == '1');
+
+      // Serial.println(String(binString[i]) + " " + String(binString[i + 1]));
+
+      uint16_t color =
+        this->COLOR_PALETTE[paletteIndex][colorIndex];
+
+      // Serial.println(color);
+
+      if (scaleX2) {
+        int16_t dx = x + (ix * 2);
+        int16_t dy = y + (iy * 2);
+
+        gfx->fillRect(dx, dy, 2, 2, color);
+        // gfx->drawPixel(dx, dy, color);
+        // gfx->drawPixel(dx + 1, dy, color);
+        // gfx->drawPixel(dx, dy + 1, color);
+        // gfx->drawPixel(dx + 1, dy + 1, color);
+      } else {
+        gfx->drawPixel(x + ix, y + iy, color);
+      }
+
+
+      ix++;
+      if (ix >= w) {
+        ix = 0;
+        iy++;
+      }
+    }
+
+    // this->drawBitmapColor(x, y, String(this->anim[i]), paletteIndex, w, h, scaleX2);
+    unsigned long frameTime = millis() - frameStart;
+    if (frameTime < this->duration) {
+      delay(this->duration - frameTime);
+    }
+  }
+}
+
+void GfxUi::playAsyncAnimationColor(int x, int y, int w, int h, int16_t paletteIndex, bool scaleX2, bool clearScreen) {
+  if (this->frame == -1) {
+    // Serial.println("frame == -1");
+    if (clearScreen) {
+      gfx->fillScreen(gfx->color565(0, 0, 0));
+    }
+    this->frame++;
+    return;
+  }
+
+  x = this->checkCenterWidth(x, scaleX2 ? w * 2 : w);
+  y = this->checkCenterHeight(y, scaleX2 ? h * 2 : h);
+
+  int ix, iy;
+  ix = 0;
+  iy = 0;
+
+  // Serial.println("frame :" + String(this->frame));
+
+  const char* binString = this->anim[this->frame];
+
+  for (int i = 0; i < (w * (h * 2)); i += 2) {
+    uint8_t colorIndex = ((binString[i] == '1') << 1) | (binString[i + 1] == '1');
+
+    // Serial.println(String(binString[i]) + " " + String(binString[i + 1]));
+
+    uint16_t color =
+      this->COLOR_PALETTE[paletteIndex][colorIndex];
+
+    // Serial.println(color);
+
+    if (scaleX2) {
+      int16_t dx = x + (ix * 2);
+      int16_t dy = y + (iy * 2);
+
+      gfx->fillRect(dx, dy, 2, 2, color);
+      // gfx->drawPixel(dx, dy, color);
+      // gfx->drawPixel(dx + 1, dy, color);
+      // gfx->drawPixel(dx, dy + 1, color);
+      // gfx->drawPixel(dx + 1, dy + 1, color);
+    } else {
+      gfx->drawPixel(x + ix, y + iy, color);
+    }
+
+
+    ix++;
+    if (ix >= w) {
+      ix = 0;
+      iy++;
+    }
   }
 
   unsigned long past_time = millis() - this->lastTimer;
 
-  Serial.println(past_time);
-  Serial.println(past_time >= this->duration);
+  // Serial.println("millis() : " + String(millis()));
+  // Serial.println("past_time : " + String(past_time));
+  // Serial.println("lastTimer : " + String(this->lastTimer));
+  // Serial.println("duration : " + String(this->duration));
+  // Serial.println("stop : " + String(this->stopAnimation));
+  // Serial.println("frame : " + String(this->frame));
+  // Serial.println(past_time >= this->duration);
+  // Serial.println("===============");
 
   if (past_time >= this->duration && !this->stopAnimation) {
+
     this->frame++;
     if (this->frame >= this->frameNumber) {
-      this->frame = 0;
+      this->frame = -1;
     }
-
     this->lastTimer = millis();
   }
 }
